@@ -5,6 +5,9 @@ const port = 3000
 
 connectToMongo();
 
+//Used to send/accept body in api
+app.use(express.json())
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/notes', require('./routes/notes'));
 

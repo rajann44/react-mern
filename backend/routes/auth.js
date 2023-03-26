@@ -2,12 +2,13 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 var jwt = require("jsonwebtoken");
 const Users = require("../models/Users");
+var fetchuser = require("../middleware/fetchuser");
 const router = express.Router();
 const { body, validationResult } = require("express-validator");
 
 const JWT_SECRET = "secret_token_for_react_mern_auth";
 
-//Create a user using: POST "/api/auth/createuser" (Require no auth / No Login required)
+//ROUTE 1: Create a user using: POST "/api/auth/createuser" (Require no auth / No Login required)
 router.post(
 	"/createuser",
 	[
@@ -55,7 +56,7 @@ router.post(
 	}
 );
 
-//Authenticate a user using: POST "/api/auth/login" (Require no auth / No Login required)
+//ROUTE 2: Authenticate a user using: POST "/api/auth/login" (Require no auth / No Login required)
 router.post(
 	"/login",
 	[
@@ -98,4 +99,15 @@ router.post(
 	}
 );
 
+//ROUTE 2: Get Logged In user details using: POST "/api/auth/getuser" (Require Auth)
+router.get("/getuser", fetchuser, async (req, res) => {
+	try {
+		let userId = req.user.id;
+		const user = await Users.findById(userId);
+		res.send(user);
+	} catch (error) {
+		console.error(error.message);
+		res.status(500).send("Internal Server Error Occured :(");
+	}
+});
 module.exports = router;

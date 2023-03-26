@@ -1,7 +1,11 @@
 const express = require("express");
+const bcrypt = require("bcryptjs");
+var jwt = require("jsonwebtoken");
 const Users = require("../models/Users");
 const router = express.Router();
 const { body, validationResult } = require("express-validator");
+
+const JWT_SECRET = "secret_token_for_react_mern_auth";
 
 //Create a user using: POST "/api/auth/createuser" (Require no auth / No Login required)
 router.post(
@@ -15,33 +19,35 @@ router.post(
 		// If Errors return Bad request and error
 		const errors = validationResult(req);
 		if (!errors.isEmpty()) {
-			return res.status(400).json({ errors: errors.array() });
+			return res.status(403).json({ errors: errors.array() });
 		}
 
 		try {
+			//Check whether email exists already
 			let user = await Users.findOne({ email: req.body.email });
 			if (user) {
 				return res.status(403).json("Sorry, but this user already exists!");
 			}
 
-			//Check whether email exists already
+			//Generate slat and secure password
+			const salt = bcrypt.genSaltSync(10);
+			const securePassword = await bcrypt.hash(req.body.password, salt);
+
+			//Create new user
 			user = await Users.create({
 				name: req.body.name,
-				password: req.body.password,
+				password: securePassword,
 				email: req.body.email,
 			});
 
-			//.then((user) => res.json(user))
-			//.catch((err) => {
-			//	console.log(err);
-			//	res.json({ error: "Enter a unqiue email", message: err.message });
-			//});
+			const data = {
+				user: { id: user.id },
+			};
+			const authToken = jwt.sign(data, JWT_SECRET);
+			//console.log(authToken);
 
-			//console.log(req.body);
-			//const user = Users(req.body);
-			//user.save();
-			//res.send(req.body)
-			res.json({ message: "User Created Successfully.", user });
+			//res.json({ message: "User Created Successfully.", user });
+			res.json({ authToken, email: user.email });
 		} catch (error) {
 			console.error(error.message);
 			res.status(500).send("Some Error Occured :(");
